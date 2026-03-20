@@ -52,8 +52,8 @@ async def get_current_user(
 
     try:
         payload = jwt.decode(token, jwt_settings.JWT_SECRET, algorithms=["HS256"])
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    except JWTError as err:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from err
 
     user_id_str = payload.get("sub")
     if not user_id_str:
@@ -61,9 +61,9 @@ async def get_current_user(
 
     try:
         user_id = uuid.UUID(user_id_str)
-    except ValueError:
+    except ValueError as err:
         # ``sub`` was present but not a valid UUID — treat as a malformed token.
-        raise HTTPException(status_code=401, detail="Invalid token payload")
+        raise HTTPException(status_code=401, detail="Invalid token payload") from err
 
     user = await user_repository.get_by_id_and_token(user_id, token)
     if not user:

@@ -4,10 +4,19 @@ import logging
 
 from fastapi import APIRouter, Depends
 
-from app.core.dependencies import get_auth_service, get_current_user, get_user_repository
+from app.core.dependencies import (
+    get_auth_service,
+    get_current_user,
+    get_user_repository,
+)
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import AuthCodeRequest, AuthResponse, MessageResponse, UserResponse
+from app.schemas.auth import (
+    AuthCodeRequest,
+    AuthResponse,
+    MessageResponse,
+    UserResponse,
+)
 from app.services.auth_service import AuthService
 
 logger = logging.getLogger(__name__)

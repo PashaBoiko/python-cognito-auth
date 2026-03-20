@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from jose import jwt
 from sqlalchemy import select
@@ -46,7 +46,11 @@ class AuthService:
             )
             logger.info("Provisioned new user for email=%s", user_info["email"])
         else:
-            logger.debug("Found existing user id=%s for email=%s", user.id, user_info["email"])
+            logger.debug(
+                "Found existing user id=%s for email=%s",
+                user.id,
+                user_info["email"],
+            )
 
         # Step 4 — persist the Cognito OAuth tokens.
         await self._repo.update_oauth_tokens(
@@ -92,7 +96,7 @@ class AuthService:
         payload = {
             "sub": str(user.id),
             "email": user.email,
-            "exp": datetime.now(timezone.utc)
+            "exp": datetime.now(UTC)
             + timedelta(hours=jwt_settings.JWT_EXPIRATION_HOURS),
         }
         return jwt.encode(payload, jwt_settings.JWT_SECRET, algorithm="HS256")

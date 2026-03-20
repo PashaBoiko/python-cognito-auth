@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +44,7 @@ class UserRepository:
         user.oauth_access_token = access_token
         user.oauth_refresh_token = refresh_token
         user.oauth_id_token = id_token
-        user.oauth_expires_at = datetime.now(tz=timezone.utc) + timedelta(
+        user.oauth_expires_at = datetime.now(tz=UTC) + timedelta(
             seconds=expires_in
         )
         await self._session.commit()

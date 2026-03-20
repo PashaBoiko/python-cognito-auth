@@ -56,8 +56,8 @@ class CognitoSettings(BaseSettings):
     # Base URL of the Cognito hosted UI, e.g.
     # ``https://your-domain.auth.us-east-1.amazoncognito.com``
     COGNITO_URL: str
-    # App client secret used to authenticate the token-exchange request.
-    COGNITO_CLIENT_SECRET: str
+    # App client secret — optional for public Cognito app clients.
+    COGNITO_CLIENT_SECRET: str | None = None
     # Redirect URI registered in the Cognito app client.
     COGNITO_LOGIN_REDIRECT_URL: str
     # OAuth 2.0 scopes requested during the token exchange,

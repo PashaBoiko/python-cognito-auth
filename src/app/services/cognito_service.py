@@ -62,25 +62,28 @@ class CognitoService:
                 )
                 raise HTTPException(
                     status_code=401,
-                    detail=f"Cognito token exchange failed ({response.status_code}): {error_body}",
+                    detail=(
+                        f"Cognito token exchange failed "
+                        f"({response.status_code}): {error_body}"
+                    ),
                 )
 
             return response.json()
 
         except HTTPException:
             raise
-        except httpx.TimeoutException:
+        except httpx.TimeoutException as err:
             logger.error("Cognito token exchange timed out for code exchange")
             raise HTTPException(
                 status_code=401,
                 detail="Authorization code is invalid or expired",
-            )
+            ) from err
         except httpx.HTTPError as exc:
             logger.error("Cognito token exchange HTTP error: %s", exc)
             raise HTTPException(
                 status_code=401,
                 detail="Authorization code is invalid or expired",
-            )
+            ) from exc
 
     async def get_user_info(self, access_token: str) -> dict:
         """Retrieve identity claims for the authenticated user from Cognito.
@@ -122,15 +125,15 @@ class CognitoService:
 
         except HTTPException:
             raise
-        except httpx.TimeoutException:
+        except httpx.TimeoutException as err:
             logger.error("Cognito userInfo request timed out")
             raise HTTPException(
                 status_code=401,
                 detail="Failed to get user information",
-            )
+            ) from err
         except httpx.HTTPError as exc:
             logger.error("Cognito userInfo HTTP error: %s", exc)
             raise HTTPException(
                 status_code=401,
                 detail="Failed to get user information",
-            )
+            ) from exc

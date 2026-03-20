@@ -30,7 +30,9 @@ class UserResponse(BaseModel):
         # ORM layer into the schema module.
         if hasattr(value, "name"):
             return str(value.name)
-        raise ValueError(f"Cannot coerce value of type {type(value)!r} to a role name string")
+        raise ValueError(
+            f"Cannot coerce value of type {type(value)!r} to a role name string"
+        )
 
 
 class AuthResponse(BaseModel):
