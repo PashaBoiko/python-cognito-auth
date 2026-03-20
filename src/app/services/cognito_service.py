@@ -35,29 +35,14 @@ class CognitoService:
     """
 
     async def exchange_code_for_token(self, code: str) -> dict:
-        """Exchange an OAuth 2.0 authorization code for Cognito tokens.
 
-        Sends a ``POST`` to ``{COGNITO_URL}/oauth2/token`` with
-        ``application/x-www-form-urlencoded`` body.
-
-        Returns a ``dict`` containing:
-
-        - ``access_token`` — Cognito access token
-        - ``refresh_token`` — Cognito refresh token
-        - ``id_token`` — Cognito ID token (JWT with identity claims)
-        - ``expires_in`` — seconds until the access token expires
-
-        Raises:
-            HTTPException: 401 when Cognito returns a non-2xx response or the
-                HTTP call itself fails.
-        """
         token_url = f"{cognito_settings.COGNITO_URL}/oauth2/token"
         payload = {
             "grant_type": "authorization_code",
             "client_id": cognito_settings.COGNITO_CLIENT_ID,
-            "client_secret": cognito_settings.COGNITO_CLIENT_SECRET,
             "code": code,
             "redirect_uri": cognito_settings.COGNITO_LOGIN_REDIRECT_URL,
+            "scope": cognito_settings.COGNITO_SCOPE,
         }
 
         try:
@@ -77,13 +62,12 @@ class CognitoService:
                 )
                 raise HTTPException(
                     status_code=401,
-                    detail="Failed to exchange authorization code for token",
+                    detail=f"Cognito token exchange failed ({response.status_code}): {error_body}",
                 )
 
             return response.json()
 
         except HTTPException:
-            # Re-raise HTTPExceptions without wrapping them.
             raise
         except httpx.TimeoutException:
             logger.error("Cognito token exchange timed out for code exchange")

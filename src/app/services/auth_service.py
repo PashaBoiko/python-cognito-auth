@@ -1,19 +1,3 @@
-"""Service that orchestrates the full OAuth 2.0 authorization-code authentication flow.
-
-Coordinates three layers:
-
-1. ``CognitoService`` — exchanges the authorization code for Cognito tokens and
-   resolves the caller's identity from the ``/oauth2/userInfo`` endpoint.
-2. ``UserRepository`` — looks up or creates the user record and persists all
-   token fields so the session can be revoked server-side.
-3. JWT issuance — signs a short-lived application JWT with the ``JWT_SECRET``
-   so that subsequent requests can be authenticated without hitting Cognito.
-
-The ``AsyncSession`` is held directly rather than buried in a repository so
-that the service can query supporting tables (e.g. ``roles``) without
-introducing a full second repository class for a single look-up.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -36,18 +20,6 @@ _DEFAULT_ROLE_NAME = "user"
 
 
 class AuthService:
-    """Orchestrates the end-to-end login flow for the application.
-
-    Accepts the three collaborators via constructor injection so that each can
-    be replaced with a test double in unit tests without patching module globals.
-
-    Args:
-        cognito_service: HTTP wrapper around the Cognito hosted-UI endpoints.
-        user_repository: Data-access layer for the ``users`` table.
-        session: Request-scoped async SQLAlchemy session used for role look-ups.
-            The same session is shared with ``user_repository`` so all reads and
-            writes participate in the same transaction.
-    """
 
     def __init__(
         self,
@@ -60,39 +32,11 @@ class AuthService:
         self._session = session
 
     async def authenticate(self, code: str) -> dict:
-        """Run the full authorization-code exchange and return auth artefacts.
 
-        Steps:
-        1. Exchange the authorization code for Cognito tokens.
-        2. Fetch the user's identity claims from the Cognito ``/userInfo`` endpoint.
-        3. Look up the user in the database; create a new record if absent.
-        4. Persist the Cognito OAuth tokens on the user record.
-        5. Issue a signed application JWT.
-        6. Persist the application token on the user record.
-
-        Args:
-            code: OAuth 2.0 authorization code received from the Cognito hosted UI.
-
-        Returns:
-            A dict with keys:
-
-            - ``user`` — the populated ``User`` ORM instance (role eagerly loaded)
-            - ``token`` — the signed application JWT string
-            - ``expires_in`` — token lifetime expressed in seconds
-
-        Raises:
-            HTTPException: 401 when Cognito rejects the authorization code or
-                the ``/userInfo`` request fails (propagated from ``CognitoService``).
-            sqlalchemy.exc.NoResultFound: when the ``user`` role does not exist in
-                the database — indicates a misconfigured seed.
-        """
-        # Step 1 — exchange the authorization code for Cognito tokens.
         tokens = await self._cognito.exchange_code_for_token(code)
 
-        # Step 2 — resolve the caller's identity claims.
         user_info = await self._cognito.get_user_info(tokens["access_token"])
 
-        # Step 3 — look up or provision the user record.
         user: User | None = await self._repo.get_by_email(user_info["email"])
 
         if user is None:
@@ -130,18 +74,7 @@ class AuthService:
     # ------------------------------------------------------------------
 
     async def _create_new_user(self, email: str, cognito_sub: str) -> User:
-        """Look up the default role and insert a new user row.
 
-        Args:
-            email: Email address obtained from the Cognito ``/userInfo`` endpoint.
-            cognito_sub: Cognito unique subject identifier for the user.
-
-        Returns:
-            The newly created ``User`` ORM instance (flushed but not yet committed).
-
-        Raises:
-            sqlalchemy.exc.NoResultFound: if the ``user`` role is missing from the DB.
-        """
         result = await self._session.execute(
             select(Role).where(Role.name == _DEFAULT_ROLE_NAME)
         )
@@ -156,19 +89,6 @@ class AuthService:
         )
 
     def _issue_jwt(self, user: User) -> str:
-        """Sign and return a short-lived application JWT for the given user.
-
-        The payload contains the minimum claims needed for request authentication:
-        ``sub`` (user UUID as string) and ``email``.  The ``exp`` claim is set to
-        ``now + JWT_EXPIRATION_HOURS`` so the token self-expires without server
-        intervention.
-
-        Args:
-            user: The authenticated ``User`` ORM instance.
-
-        Returns:
-            A signed JWT string encoded with HS256.
-        """
         payload = {
             "sub": str(user.id),
             "email": user.email,

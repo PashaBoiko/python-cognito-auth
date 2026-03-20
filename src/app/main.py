@@ -1,14 +1,3 @@
-"""Application factory module for the Python Auth Microservice.
-
-This module exposes a ``create_app`` factory function that is consumed by
-uvicorn via its ``--factory`` flag::
-
-    uvicorn app.main:create_app --factory
-
-Later slices will extend the factory with router mounting and additional
-middleware as requirements grow.
-"""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,16 +7,6 @@ from app.routers.health import router as health_router
 
 
 def create_app() -> FastAPI:
-    """Construct and return the FastAPI application instance.
-
-    OpenAPI docs are hidden in non-development environments to avoid
-    leaking schema information to external consumers.  CORS is configured
-    from the module-level ``app_settings`` singleton so that the server
-    refuses to start if ``ALLOWED_ORIGINS`` is absent.
-
-    Returns:
-        FastAPI: Configured application instance ready for ASGI serving.
-    """
     openapi_url = (
         "/openapi.json" if app_settings.APP_ENV == Environment.DEVELOPMENT else None
     )
@@ -52,12 +31,6 @@ def create_app() -> FastAPI:
 
     @app.get("/", summary="Health probe")
     async def root() -> dict[str, str]:
-        """Return a minimal liveness response.
-
-        This route is intentionally thin — it exists only so the service is
-        immediately testable after scaffolding.  It will be replaced or
-        augmented by a dedicated health-check router in a later slice.
-        """
         return {"message": "Python Auth Microservice"}
 
     return app
