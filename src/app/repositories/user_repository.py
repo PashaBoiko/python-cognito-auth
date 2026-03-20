@@ -10,15 +10,12 @@ from app.models.user import User
 
 
 class UserRepository:
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
     async def get_by_email(self, email: str) -> User | None:
 
-        result = await self._session.execute(
-            select(User).where(User.email == email)
-        )
+        result = await self._session.execute(select(User).where(User.email == email))
         return result.scalars().first()
 
     async def create(
@@ -44,9 +41,7 @@ class UserRepository:
         user.oauth_access_token = access_token
         user.oauth_refresh_token = refresh_token
         user.oauth_id_token = id_token
-        user.oauth_expires_at = datetime.now(tz=UTC) + timedelta(
-            seconds=expires_in
-        )
+        user.oauth_expires_at = datetime.now(tz=UTC) + timedelta(seconds=expires_in)
         await self._session.commit()
         await self._session.refresh(user)
 
@@ -55,9 +50,7 @@ class UserRepository:
         await self._session.commit()
         await self._session.refresh(user)
 
-    async def get_by_id_and_token(
-        self, user_id: uuid.UUID, token: str
-    ) -> User | None:
+    async def get_by_id_and_token(self, user_id: uuid.UUID, token: str) -> User | None:
         result = await self._session.execute(
             select(User).where(User.id == user_id, User.token == token)
         )

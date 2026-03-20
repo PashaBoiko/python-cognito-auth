@@ -20,7 +20,6 @@ _DEFAULT_ROLE_NAME = "user"
 
 
 class AuthService:
-
     def __init__(
         self,
         cognito_service: CognitoService,
@@ -31,7 +30,7 @@ class AuthService:
         self._repo = user_repository
         self._session = session
 
-    async def authenticate(self, code: str) -> dict:
+    async def authenticate(self, code: str) -> dict[str, object]:
 
         tokens = await self._cognito.exchange_code_for_token(code)
 
@@ -99,4 +98,5 @@ class AuthService:
             "exp": datetime.now(UTC)
             + timedelta(hours=jwt_settings.JWT_EXPIRATION_HOURS),
         }
-        return jwt.encode(payload, jwt_settings.JWT_SECRET, algorithm="HS256")
+        token: str = jwt.encode(payload, jwt_settings.JWT_SECRET, algorithm="HS256")
+        return token

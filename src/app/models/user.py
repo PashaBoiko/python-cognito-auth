@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 
 class User(Base):
-
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(

@@ -11,7 +11,6 @@ class AuthCodeRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
-
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -36,12 +35,10 @@ class UserResponse(BaseModel):
 
 
 class AuthResponse(BaseModel):
-
     user: UserResponse
     token: str
     expires_in: int
 
 
 class MessageResponse(BaseModel):
-
     message: str

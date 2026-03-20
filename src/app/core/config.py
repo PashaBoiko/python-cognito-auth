@@ -11,7 +11,6 @@ class Environment(StrEnum):
 
 
 class AppSettings(BaseSettings):
-
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -31,7 +30,6 @@ class AppSettings(BaseSettings):
 
 
 class DatabaseSettings(BaseSettings):
-
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -43,7 +41,6 @@ class DatabaseSettings(BaseSettings):
 
 
 class CognitoSettings(BaseSettings):
-
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -66,7 +63,6 @@ class CognitoSettings(BaseSettings):
 
 
 class JWTSettings(BaseSettings):
-
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

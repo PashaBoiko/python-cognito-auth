@@ -34,7 +34,7 @@ class CognitoService:
     creating a short-lived instance per request is also safe.
     """
 
-    async def exchange_code_for_token(self, code: str) -> dict:
+    async def exchange_code_for_token(self, code: str) -> dict[str, object]:
 
         token_url = f"{cognito_settings.COGNITO_URL}/oauth2/token"
         payload = {
@@ -68,7 +68,8 @@ class CognitoService:
                     ),
                 )
 
-            return response.json()
+            result: dict[str, object] = response.json()
+            return result
 
         except HTTPException:
             raise
@@ -85,7 +86,7 @@ class CognitoService:
                 detail="Authorization code is invalid or expired",
             ) from exc
 
-    async def get_user_info(self, access_token: str) -> dict:
+    async def get_user_info(self, access_token: str) -> dict[str, object]:
         """Retrieve identity claims for the authenticated user from Cognito.
 
         Sends a ``GET`` to ``{COGNITO_URL}/oauth2/userInfo`` with the access
@@ -121,7 +122,8 @@ class CognitoService:
                     detail="Failed to get user information from Cognito",
                 )
 
-            return response.json()
+            result: dict[str, object] = response.json()
+            return result
 
         except HTTPException:
             raise
