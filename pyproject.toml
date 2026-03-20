@@ -36,12 +36,21 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = []
+ignore = ["B008"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["app.core.config"]
+disable_error_code = ["call-arg"]
+
+[[tool.mypy.overrides]]
+module = ["app.models.*", "src.app.models.*"]
+disable_error_code = ["misc"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

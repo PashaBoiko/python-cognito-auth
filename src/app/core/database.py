@@ -1,19 +1,3 @@
-"""Async SQLAlchemy engine, session factory, and declarative base.
-
-Three module-level objects are exposed:
-
-- ``Base`` — declarative base with an Alembic-compatible ``MetaData`` naming
-  convention, used by all ORM models.
-- ``engine`` — async engine backed by ``asyncpg``; created once at import time
-  from ``db_settings.DATABASE_URL``.
-- ``async_session_maker`` — bound ``async_sessionmaker`` for producing
-  ``AsyncSession`` instances throughout the application.
-
-The ``postgresql://`` scheme produced by Pydantic's ``PostgresDsn`` type is
-rewritten to ``postgresql+asyncpg://`` so that SQLAlchemy uses the asyncpg
-dialect instead of the blocking psycopg2 one.
-"""
-
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -38,12 +22,6 @@ POSTGRES_INDEXES_NAMING_CONVENTION: dict[str, str] = {
 
 
 class Base(DeclarativeBase):
-    """Declarative base with a project-wide metadata naming convention.
-
-    All ORM model classes must inherit from this base so that their table
-    constraints receive consistently named database objects.
-    """
-
     metadata = MetaData(naming_convention=POSTGRES_INDEXES_NAMING_CONVENTION)
 
 
