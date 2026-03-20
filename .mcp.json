@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "awos-recruitment": {
+      "type": "http",
+      "url": "https://recruitment.awos.provectus.pro/mcp"
+    },
+    "aws-api-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-api-mcp-server@latest"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    },
+    "aws-knowledge-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "fastmcp",
+        "run",
+        "https://knowledge-mcp.global.api.aws"
+      ]
+    }
+  }
+}
