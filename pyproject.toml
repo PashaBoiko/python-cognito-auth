@@ -19,6 +19,7 @@ python-jose = {extras = ["cryptography"], version = "*"}
 structlog = "*"
 greenlet = "^3.3.2"
 httpx = "*"
+redis = {extras = ["hiredis"], version = "*"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

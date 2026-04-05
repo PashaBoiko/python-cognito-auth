@@ -45,18 +45,6 @@ class UserRepository:
         await self._session.commit()
         await self._session.refresh(user)
 
-    async def update_token(self, user: User, token: str) -> None:
-        user.token = token
-        await self._session.commit()
-        await self._session.refresh(user)
-
-    async def get_by_id_and_token(self, user_id: uuid.UUID, token: str) -> User | None:
-        result = await self._session.execute(
-            select(User).where(User.id == user_id, User.token == token)
-        )
+    async def get_by_id(self, user_id: uuid.UUID) -> User | None:
+        result = await self._session.execute(select(User).where(User.id == user_id))
         return result.scalars().first()
-
-    async def clear_token(self, user: User) -> None:
-        user.token = None
-        await self._session.commit()
-        await self._session.refresh(user)

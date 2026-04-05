@@ -73,6 +73,21 @@ class JWTSettings(BaseSettings):
     JWT_EXPIRATION_HOURS: int = 24
 
 
+class RedisSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # Required: must be set to a valid Redis connection URL, e.g.
+    # ``redis://localhost:6379/0``.
+    REDIS_URL: str
+    # Maximum number of concurrent sessions allowed per user before the
+    # oldest session is evicted.
+    REDIS_MAX_SESSIONS: int = 3
+
+
 # ---------------------------------------------------------------------------
 # Module-level singletons
 #
@@ -85,3 +100,4 @@ app_settings = AppSettings()
 db_settings = DatabaseSettings()
 cognito_settings = CognitoSettings()
 jwt_settings = JWTSettings()
+redis_settings = RedisSettings()
