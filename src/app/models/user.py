@@ -56,14 +56,6 @@ class User(Base):
     )
 
     # ------------------------------------------------------------------
-    # Application token
-    # ------------------------------------------------------------------
-
-    # Opaque session token issued by this service after a successful OAuth
-    # exchange.  Stored so the service can revoke it server-side.
-    token: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
-
-    # ------------------------------------------------------------------
     # OAuth 2.0 tokens received from Cognito
     # ------------------------------------------------------------------
 

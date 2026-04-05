@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from app.core.dependencies import (
     get_auth_service,
     get_current_user,
-    get_user_repository,
+    get_token_service,
 )
 from app.models.user import User
-from app.repositories.user_repository import UserRepository
 from app.schemas.auth import (
     AuthCodeRequest,
     AuthResponse,
@@ -18,6 +17,7 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.services.auth_service import AuthService
+from app.services.token_service import TokenService
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +78,12 @@ async def validate_token(
     ),
 )
 async def logout(
+    request: Request,
     current_user: User = Depends(get_current_user),
-    user_repository: UserRepository = Depends(get_user_repository),
+    token_service: TokenService = Depends(get_token_service),
 ) -> MessageResponse:
 
-    await user_repository.clear_token(current_user)
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.removeprefix("Bearer ").strip()
+    await token_service.revoke_token(token, str(current_user.id))
     return MessageResponse(message="Logged out successfully")

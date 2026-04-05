@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import Environment, app_settings
+from app.core.redis import lifespan
 from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
 
@@ -11,7 +12,11 @@ def create_app() -> FastAPI:
         "/openapi.json" if app_settings.APP_ENV == Environment.DEVELOPMENT else None
     )
 
-    app = FastAPI(title="Python Auth Microservice", openapi_url=openapi_url)
+    app = FastAPI(
+        title="Python Auth Microservice",
+        openapi_url=openapi_url,
+        lifespan=lifespan,
+    )
 
     app.add_middleware(
         CORSMiddleware,

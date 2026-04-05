@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.dependencies import get_current_user, get_db_session
+from app.core.redis import get_redis_client
 from app.main import create_app
 
 
@@ -16,7 +17,11 @@ def app():
     async def override_db_session():
         yield AsyncMock()
 
+    async def override_redis_client():
+        yield AsyncMock()
+
     application.dependency_overrides[get_db_session] = override_db_session
+    application.dependency_overrides[get_redis_client] = override_redis_client
     return application
 
 

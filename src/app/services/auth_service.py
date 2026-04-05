@@ -12,6 +12,7 @@ from app.models.role import Role
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.services.cognito_service import CognitoService
+from app.services.token_service import TokenService
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +26,12 @@ class AuthService:
         cognito_service: CognitoService,
         user_repository: UserRepository,
         session: AsyncSession,
+        token_service: TokenService,
     ) -> None:
         self._cognito = cognito_service
         self._repo = user_repository
         self._session = session
+        self._token_service = token_service
 
     async def authenticate(self, code: str) -> dict[str, object]:
 
@@ -63,8 +66,8 @@ class AuthService:
         # Step 5 — issue a signed application JWT.
         app_token = self._issue_jwt(user)
 
-        # Step 6 — persist the application token for server-side revocation.
-        await self._repo.update_token(user, app_token)
+        # Step 6 — persist the application token in Redis for multi-session support.
+        await self._token_service.store_token(app_token, str(user.id), user.email)
 
         return {
             "user": user,
