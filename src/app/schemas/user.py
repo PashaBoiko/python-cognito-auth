@@ -88,9 +88,7 @@ class UserUpdateRequest(BaseModel):
         if value is None:
             return value
         if not _E164_PATTERN.match(value):
-            raise ValueError(
-                "phone_number must be in E.164 format, e.g. +14155552671"
-            )
+            raise ValueError("phone_number must be in E.164 format, e.g. +14155552671")
         return value
 
     @field_validator("avatar_url")

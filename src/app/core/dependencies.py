@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncGenerator, Callable
+from typing import Any
 
 import redis.asyncio as aioredis
 from fastapi import Depends, HTTPException, Request
@@ -112,8 +113,8 @@ async def get_current_user(
     return user
 
 
-def require_role(*roles: str) -> Callable:
-    """Return a FastAPI dependency that checks the current user has one of the given roles.
+def require_role(*roles: str) -> Callable[..., Any]:
+    """Return a dependency that checks the user has one of the given roles.
 
     Usage::
 

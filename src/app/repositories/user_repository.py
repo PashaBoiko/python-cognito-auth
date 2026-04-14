@@ -18,9 +18,7 @@ class UserRepository:
         email: str,
         include_deleted: bool = False,
     ) -> User | None:
-        statement = select(User).where(
-            func.lower(User.email) == email.lower()
-        )
+        statement = select(User).where(func.lower(User.email) == email.lower())
         if not include_deleted:
             statement = statement.where(User.deleted_at.is_(None))
         result = await self._session.execute(statement)

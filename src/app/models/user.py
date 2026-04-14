@@ -55,9 +55,7 @@ class User(Base):
     phone_number: Mapped[str | None] = mapped_column(
         String(16), nullable=True, default=None
     )
-    avatar_url: Mapped[str | None] = mapped_column(
-        Text, nullable=True, default=None
-    )
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     # ------------------------------------------------------------------
     # Timestamps

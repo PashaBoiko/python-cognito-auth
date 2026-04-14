@@ -81,11 +81,12 @@ class UserService:
         if include_deleted and not self._is_admin(current_user):
             include_deleted = False
 
-        return await self._repo.list_users(
+        users, total = await self._repo.list_users(
             offset=offset,
             limit=limit,
             include_deleted=include_deleted,
         )
+        return users, total
 
     async def update_user(
         self,
