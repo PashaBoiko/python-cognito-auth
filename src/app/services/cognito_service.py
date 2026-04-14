@@ -12,9 +12,12 @@ loop.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
+import boto3
 import httpx
+from botocore.exceptions import ClientError
 from fastapi import HTTPException
 
 from app.core.config import cognito_settings
@@ -138,4 +141,41 @@ class CognitoService:
             raise HTTPException(
                 status_code=401,
                 detail="Failed to get user information",
+            ) from exc
+
+    async def admin_disable_user(self, cognito_sub: str) -> None:
+        """Disable a user account in the Cognito User Pool.
+
+        Uses the boto3 ``AdminDisableUser`` API to prevent the user from
+        signing in.  The synchronous boto3 call is offloaded to a thread
+        via ``asyncio.to_thread`` so the FastAPI event loop is not blocked.
+
+        Args:
+            cognito_sub: The Cognito ``sub`` (unique user identifier) of the
+                user to disable.
+
+        Raises:
+            HTTPException: 502 when the Cognito admin API call fails.
+        """
+        cognito_client = boto3.client(
+            "cognito-idp",
+            region_name=cognito_settings.COGNITO_REGION,
+        )
+
+        try:
+            await asyncio.to_thread(
+                cognito_client.admin_disable_user,
+                UserPoolId=cognito_settings.COGNITO_USER_POOL_ID,
+                Username=cognito_sub,
+            )
+        except ClientError as exc:
+            error_message = exc.response["Error"]["Message"]
+            logger.error(
+                "Failed to disable user %s in Cognito: %s",
+                cognito_sub,
+                error_message,
+            )
+            raise HTTPException(
+                status_code=502,
+                detail=f"Failed to disable user in Cognito: {error_message}",
             ) from exc

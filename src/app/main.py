@@ -5,6 +5,7 @@ from app.core.config import Environment, app_settings
 from app.core.redis import lifespan
 from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
+from app.routers.users import router as users_router
 
 
 def create_app() -> FastAPI:
@@ -30,8 +31,9 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router, prefix="/api/v1")
 
+    app.include_router(users_router, prefix="/api/v1")
+
     # Future API v1 routers
-    # app.include_router(users_router, prefix="/api/v1")
     # app.include_router(roles_router, prefix="/api/v1")
 
     @app.get("/", summary="Health probe")

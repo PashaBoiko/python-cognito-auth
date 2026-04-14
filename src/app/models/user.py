@@ -41,6 +41,26 @@ class User(Base):
         ForeignKey("roles.id"),
         nullable=False,
     )
+    # ------------------------------------------------------------------
+    # Profile fields
+    # ------------------------------------------------------------------
+
+    first_name: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, default=None
+    )
+    last_name: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, default=None
+    )
+    # E.164 format: '+' prefix + up to 15 digits = max 16 characters.
+    phone_number: Mapped[str | None] = mapped_column(
+        String(16), nullable=True, default=None
+    )
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+
+    # ------------------------------------------------------------------
+    # Timestamps
+    # ------------------------------------------------------------------
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -53,6 +73,10 @@ class User(Base):
         # handles the initial value so no application-side logic is needed.
         onupdate=func.now(),
         nullable=False,
+    )
+    # Soft-delete marker; NULL means the record is active.
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
     )
 
     # ------------------------------------------------------------------

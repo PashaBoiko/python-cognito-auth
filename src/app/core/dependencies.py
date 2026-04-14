@@ -1,5 +1,6 @@
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
+from typing import Any
 
 import redis.asyncio as aioredis
 from fastapi import Depends, HTTPException, Request
@@ -14,6 +15,7 @@ from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.cognito_service import CognitoService
 from app.services.token_service import TokenService
+from app.services.user_service import UserService
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -45,6 +47,14 @@ async def get_auth_service(
     token_service: TokenService = Depends(get_token_service),
 ) -> AuthService:
     return AuthService(cognito_service, user_repository, session, token_service)
+
+
+async def get_user_service(
+    user_repository: UserRepository = Depends(get_user_repository),
+    session: AsyncSession = Depends(get_db_session),
+    cognito_service: CognitoService = Depends(get_cognito_service),
+) -> UserService:
+    return UserService(user_repository, session, cognito_service)
 
 
 async def get_current_user(
@@ -85,11 +95,47 @@ async def get_current_user(
         )
 
     # Fetch the full User record from PostgreSQL using the ID embedded in the JWT.
-    user = await user_repository.get_by_id(user_id)
+    # Use include_deleted=True so we can distinguish "user does not exist" from
+    # "user was soft-deleted" and return a meaningful error message.
+    user = await user_repository.get_by_id(user_id, include_deleted=True)
     if not user:
         raise HTTPException(
             status_code=401,
             detail="Token has been revoked or user not found",
         )
 
+    if user.deleted_at is not None:
+        raise HTTPException(
+            status_code=401,
+            detail="User account has been deactivated",
+        )
+
     return user
+
+
+def require_role(*roles: str) -> Callable[..., Any]:
+    """Return a dependency that checks the user has one of the given roles.
+
+    Usage::
+
+        Depends(require_role("admin"))           # admin only
+        Depends(require_role("admin", "user"))   # either role
+
+    The returned dependency internally calls ``get_current_user`` to
+    authenticate the request and then verifies that ``user.role.name``
+    matches one of the supplied *roles*.  If the check fails a **403**
+    is raised; otherwise the authenticated ``User`` object is returned
+    so endpoints can use it directly.
+    """
+
+    async def _role_checker(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if current_user.role is None or current_user.role.name not in roles:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions",
+            )
+        return current_user
+
+    return _role_checker
