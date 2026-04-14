@@ -38,9 +38,9 @@ _Once the data layer is in place, we build the authentication flows powered by A
 
 _With auth working, expose the user and role management endpoints for consuming services._
 
-- [ ] **User Lookup**
-  - [ ] **Get User by ID:** Retrieve a user's details by their internal UUID via `GET /users/{id}`.
-  - [ ] **Get User by Email:** Retrieve a user's details by email address via `GET /users/by-email/{email}`.
+- [x] **User Lookup** _(expanded to full User Management CRUD — list, get by ID, get by email, update profile, soft delete)_
+  - [x] **Get User by ID:** Retrieve a user's details by their internal UUID via `GET /users/{id}`.
+  - [x] **Get User by Email:** Retrieve a user's details by email address via `GET /users/by-email/{email}`.
 
 - [ ] **Role Management**
   - [ ] **List Roles:** Return all available roles via `GET /roles`.
