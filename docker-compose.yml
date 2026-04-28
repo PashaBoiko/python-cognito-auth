@@ -27,6 +27,14 @@ services:
 
   app:
     build: .
+    command: >
+      uvicorn app.main:create_app
+      --factory
+      --host 0.0.0.0
+      --port 8000
+      --app-dir src
+      --reload
+      --reload-dir /app/src
     ports:
       - "8000:8000"
     depends_on:
@@ -42,6 +50,7 @@ services:
       REDIS_URL: redis://redis:6379
     volumes:
       - ./src:/app/src
+      - ./alembic:/app/alembic
 
 volumes:
   postgres_data:

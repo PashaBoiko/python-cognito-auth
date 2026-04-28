@@ -63,16 +63,23 @@ class AuthService:
             tokens["expires_in"],
         )
 
+        # Application JWT lifetime mirrors Cognito's access-token lifetime so
+        # that the two stay in sync — when Cognito's token expires, the app
+        # token (and its Redis record) expire at the same moment.
+        cognito_expires_in = int(tokens["expires_in"])
+
         # Step 5 — issue a signed application JWT.
-        app_token = self._issue_jwt(user)
+        app_token = self._issue_jwt(user, cognito_expires_in)
 
         # Step 6 — persist the application token in Redis for multi-session support.
-        await self._token_service.store_token(app_token, str(user.id), user.email)
+        await self._token_service.store_token(
+            app_token, str(user.id), user.email, cognito_expires_in
+        )
 
         return {
             "user": user,
             "token": app_token,
-            "expires_in": jwt_settings.JWT_EXPIRATION_HOURS * 3600,
+            "expires_in": cognito_expires_in,
         }
 
     # ------------------------------------------------------------------
@@ -94,12 +101,11 @@ class AuthService:
             role_id=default_role.id,
         )
 
-    def _issue_jwt(self, user: User) -> str:
+    def _issue_jwt(self, user: User, expires_in_seconds: int) -> str:
         payload = {
             "sub": str(user.id),
             "email": user.email,
-            "exp": datetime.now(UTC)
-            + timedelta(hours=jwt_settings.JWT_EXPIRATION_HOURS),
+            "exp": datetime.now(UTC) + timedelta(seconds=expires_in_seconds),
         }
         token: str = jwt.encode(payload, jwt_settings.JWT_SECRET, algorithm="HS256")
         return token

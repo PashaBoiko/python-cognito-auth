@@ -149,35 +149,6 @@ class UserService:
         await self._session.commit()
         return user
 
-    async def get_by_email(
-        self,
-        email: str,
-        include_deleted: bool = False,
-        current_user: User | None = None,
-    ) -> User:
-        """Fetch a single user by email address.
-
-        Delegates to ``UserRepository.get_by_email`` and raises a 404 error
-        when the requested user does not exist (or has been soft-deleted
-        and ``include_deleted`` is ``False``).
-
-        When ``include_deleted`` is ``True``, only admin users are
-        permitted to see soft-deleted records.  Non-admin callers have
-        the flag silently reset to ``False``.
-        """
-        if include_deleted and not self._is_admin(current_user):
-            include_deleted = False
-
-        user: User | None = await self._repo.get_by_email(
-            email, include_deleted=include_deleted
-        )
-
-        if user is None:
-            logger.debug("User not found for email=%s", email)
-            raise HTTPException(status_code=404, detail="User not found")
-
-        return user
-
     async def delete_user(self, user_id: uuid.UUID) -> None:
         """Soft-delete a user and disable their Cognito account.
 

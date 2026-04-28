@@ -25,6 +25,7 @@ from app.services.token_service import TokenService
 _TEST_TOKEN = "test-jwt"
 _USER_ID = "user-123"
 _EMAIL = "test@example.com"
+_TTL_SECONDS = 3600
 
 # Pre-compute the SHA-256 hash used by the service so assertions can reference
 # the same value without duplicating the hashing logic.
@@ -69,7 +70,7 @@ async def test_store_token_saves_to_redis() -> None:
     redis_mock = _make_redis_mock()
     service = _make_service(redis_mock)
 
-    await service.store_token(_TEST_TOKEN, _USER_ID, _EMAIL)
+    await service.store_token(_TEST_TOKEN, _USER_ID, _EMAIL, _TTL_SECONDS)
 
     # The ``set`` call must use the correct key and an integer TTL.
     set_call = redis_mock.set.call_args
@@ -191,7 +192,7 @@ async def test_session_limit_evicts_oldest() -> None:
     )
     service = _make_service(redis_mock)
 
-    await service.store_token(_TEST_TOKEN, _USER_ID, _EMAIL)
+    await service.store_token(_TEST_TOKEN, _USER_ID, _EMAIL, _TTL_SECONDS)
 
     # The oldest session must have been evicted: its token key deleted and its
     # hash removed from the session set.
@@ -217,7 +218,7 @@ async def test_store_token_raises_503_on_redis_error() -> None:
     service = _make_service(redis_mock)
 
     with pytest.raises(HTTPException) as exc_info:
-        await service.store_token(_TEST_TOKEN, _USER_ID, _EMAIL)
+        await service.store_token(_TEST_TOKEN, _USER_ID, _EMAIL, _TTL_SECONDS)
 
     assert exc_info.value.status_code == 503
     assert "unavailable" in exc_info.value.detail.lower()

@@ -128,74 +128,6 @@ def test_get_user_by_id_invalid_uuid_format_returns_422(app, client, fake_curren
     assert response.status_code == 422
 
 
-def test_get_user_by_email_valid_email_returns_200_with_profile(
-    app, client, fake_current_user, fake_target_user
-):
-    """A valid email for an existing user returns 200 and the expected profile fields."""
-    app.dependency_overrides[get_current_user] = lambda: fake_current_user
-
-    mock_user_service = AsyncMock()
-    mock_user_service.get_by_email = AsyncMock(return_value=fake_target_user)
-
-    app.dependency_overrides[get_user_service] = lambda: mock_user_service
-
-    response = client.get(f"/api/v1/users/by-email/{fake_target_user.email}")
-
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["id"] == str(fake_target_user.id)
-    assert data["email"] == fake_target_user.email
-    assert data["first_name"] == fake_target_user.first_name
-    assert data["last_name"] == fake_target_user.last_name
-    assert data["phone_number"] == fake_target_user.phone_number
-    assert data["avatar_url"] == fake_target_user.avatar_url
-    assert data["role"] == "user"
-    assert "created_at" in data
-    assert "updated_at" in data
-    assert "cognito_sub" not in data
-
-
-def test_get_user_by_email_unknown_email_returns_404(app, client, fake_current_user):
-    """An email that matches no user causes UserService to raise 404."""
-    app.dependency_overrides[get_current_user] = lambda: fake_current_user
-
-    mock_user_service = AsyncMock()
-    mock_user_service.get_by_email = AsyncMock(
-        side_effect=HTTPException(status_code=404, detail="User not found")
-    )
-
-    app.dependency_overrides[get_user_service] = lambda: mock_user_service
-
-    response = client.get("/api/v1/users/by-email/unknown@example.com")
-
-    assert response.status_code == 404
-
-
-def test_get_user_by_email_case_insensitive_passes_email_through(
-    app, client, fake_current_user, fake_target_user
-):
-    """The endpoint passes the email as-is to the service; case-folding is the repository's concern."""
-    app.dependency_overrides[get_current_user] = lambda: fake_current_user
-
-    mock_user_service = AsyncMock()
-    mock_user_service.get_by_email = AsyncMock(return_value=fake_target_user)
-
-    app.dependency_overrides[get_user_service] = lambda: mock_user_service
-
-    mixed_case_email = "User@Example.COM"
-    response = client.get(f"/api/v1/users/by-email/{mixed_case_email}")
-
-    assert response.status_code == 200
-    # Confirm the service received the email exactly as supplied in the URL path —
-    # the router must not alter casing before forwarding to the service layer.
-    mock_user_service.get_by_email.assert_awaited_once_with(
-        mixed_case_email,
-        include_deleted=False,
-        current_user=fake_current_user,
-    )
-
-
 def test_list_users_default_pagination_returns_200_with_paginated_response(
     app, client, fake_current_user, fake_target_user
 ):
@@ -345,9 +277,7 @@ def test_patch_user_invalid_avatar_url_returns_422(app, client, fake_current_use
     assert response.status_code == 422
 
 
-def test_patch_user_sending_email_field_returns_403(
-    app, client, fake_current_user
-):
+def test_patch_user_sending_email_field_returns_403(app, client, fake_current_user):
     """PATCH /api/v1/users/{id} with an email field is rejected by the service with 403."""
     app.dependency_overrides[get_current_user] = lambda: fake_current_user
 
@@ -556,7 +486,9 @@ def test_admin_delete_user_returns_204(app, client, fake_admin_user, fake_target
     mock_user_service.delete_user.assert_awaited_once_with(fake_target_user.id)
 
 
-def test_non_admin_delete_user_returns_403(app, client, fake_regular_user, fake_target_user):
+def test_non_admin_delete_user_returns_403(
+    app, client, fake_regular_user, fake_target_user
+):
     """DELETE /api/v1/users/{id} by a non-admin is rejected by require_role with 403."""
     # Override get_current_user with a regular (non-admin) user so that
     # require_role("admin") resolves it and raises 403 due to role mismatch.
@@ -565,10 +497,14 @@ def test_non_admin_delete_user_returns_403(app, client, fake_regular_user, fake_
     response = client.delete(f"/api/v1/users/{fake_target_user.id}")
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "Insufficient permissions"
+    body = response.json()
+    assert body["message"] == "Insufficient permissions"
+    assert body["errorCode"] == "FORBIDDEN"
 
 
-def test_admin_delete_already_deleted_user_returns_404(app, client, fake_admin_user, fake_target_user):
+def test_admin_delete_already_deleted_user_returns_404(
+    app, client, fake_admin_user, fake_target_user
+):
     """DELETE /api/v1/users/{id} for a soft-deleted user propagates the 404 raised by the service."""
     app.dependency_overrides[get_current_user] = lambda: fake_admin_user
 
@@ -582,7 +518,9 @@ def test_admin_delete_already_deleted_user_returns_404(app, client, fake_admin_u
     response = client.delete(f"/api/v1/users/{fake_target_user.id}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "User not found"
+    body = response.json()
+    assert body["message"] == "User not found"
+    assert body["errorCode"] == "NOT_FOUND"
 
 
 def test_deactivated_user_token_rejected_returns_401(app, client, fake_target_user):
@@ -593,6 +531,7 @@ def test_deactivated_user_token_rejected_returns_401(app, client, fake_target_us
     the dependency to reproduce that behaviour confirms the endpoint surfaces the
     error correctly through the FastAPI dependency chain.
     """
+
     # Simulate get_current_user raising the deactivated-account error that the
     # real implementation raises when deleted_at is not None.
     def deactivated_user():
@@ -604,7 +543,9 @@ def test_deactivated_user_token_rejected_returns_401(app, client, fake_target_us
     response = client.get(f"/api/v1/users/{fake_target_user.id}")
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "User account has been deactivated"
+    body = response.json()
+    assert body["message"] == "User account has been deactivated"
+    assert body["errorCode"] == "UNAUTHORIZED"
 
 
 def test_get_soft_deleted_user_without_include_deleted_returns_404(
@@ -628,4 +569,6 @@ def test_get_soft_deleted_user_without_include_deleted_returns_404(
     response = client.get(f"/api/v1/users/{fake_target_user.id}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "User not found"
+    body = response.json()
+    assert body["message"] == "User not found"
+    assert body["errorCode"] == "NOT_FOUND"
