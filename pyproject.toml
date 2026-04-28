@@ -26,6 +26,7 @@ pytest = "*"
 pytest-asyncio = "*"
 ruff = "*"
 mypy = "*"
+taskipy = "*"
 
 [build-system]
 requires = ["poetry-core"]
@@ -52,6 +53,17 @@ disable_error_code = ["call-arg"]
 [[tool.mypy.overrides]]
 module = ["app.models.*", "src.app.models.*"]
 disable_error_code = ["misc"]
+
+[tool.taskipy.tasks]
+dev = "uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --app-dir src --reload"
+run = "uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --app-dir src"
+test = "pytest"
+lint = "ruff check src/"
+lint-fix = "ruff check src/ --fix"
+typecheck = "mypy src/"
+check = "task lint && task typecheck && task test"
+migrate = "PYTHONPATH=src alembic upgrade head"
+migrate-down = "PYTHONPATH=src alembic downgrade -1"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

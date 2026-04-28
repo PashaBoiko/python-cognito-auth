@@ -70,7 +70,6 @@ class JWTSettings(BaseSettings):
     )
 
     JWT_SECRET: str
-    JWT_EXPIRATION_HOURS: int = 24
 
 
 class RedisSettings(BaseSettings):

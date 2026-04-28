@@ -22,10 +22,11 @@ router = APIRouter(tags=["Users"])
 @router.get(
     "/users",
     response_model=PaginatedUserResponse,
-    summary="List users",
+    summary="List users (admin only)",
     description=(
         "Returns a paginated list of active users. "
-        "Requires a valid Bearer token in the ``Authorization`` header. "
+        "Requires a valid Bearer token belonging to a user with the ``admin`` role; "
+        "non-admin callers receive HTTP 403. "
         "Use the ``offset`` and ``limit`` query parameters to control "
         "pagination (``limit`` is capped at 100)."
     ),
@@ -35,7 +36,7 @@ async def list_users(
     limit: int = Query(default=20, le=100),
     include_deleted: bool = False,
     user_service: UserService = Depends(get_user_service),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("admin")),
 ) -> PaginatedUserResponse:
     users, total_count = await user_service.list_users(
         offset=offset,
@@ -70,31 +71,6 @@ async def get_user_by_id(
 ) -> UserProfileResponse:
     user = await user_service.get_by_id(
         id,
-        include_deleted=include_deleted,
-        current_user=current_user,
-    )
-    return UserProfileResponse.model_validate(user)
-
-
-@router.get(
-    "/users/by-email/{email}",
-    response_model=UserProfileResponse,
-    summary="Get a user by email",
-    description=(
-        "Retrieves the public profile of a user by their email address. "
-        "Requires a valid Bearer token in the ``Authorization`` header. "
-        "Returns HTTP 404 when a user with the given email does not exist "
-        "or has been soft-deleted."
-    ),
-)
-async def get_user_by_email(
-    email: str,
-    include_deleted: bool = False,
-    user_service: UserService = Depends(get_user_service),
-    current_user: User = Depends(get_current_user),
-) -> UserProfileResponse:
-    user = await user_service.get_by_email(
-        email,
         include_deleted=include_deleted,
         current_user=current_user,
     )

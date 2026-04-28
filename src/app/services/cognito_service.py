@@ -48,11 +48,20 @@ class CognitoService:
             "scope": cognito_settings.COGNITO_SCOPE,
         }
 
+        # Confidential app clients require HTTP Basic Auth with
+        # ``client_id:client_secret``. Public clients omit the secret.
+        auth: tuple[str, str] | None = (
+            (cognito_settings.COGNITO_CLIENT_ID, cognito_settings.COGNITO_CLIENT_SECRET)
+            if cognito_settings.COGNITO_CLIENT_SECRET
+            else None
+        )
+
         try:
             async with httpx.AsyncClient(timeout=_COGNITO_TIMEOUT) as client:
                 response = await client.post(
                     token_url,
                     data=payload,
+                    auth=auth,  # type: ignore[arg-type]
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                 )
 

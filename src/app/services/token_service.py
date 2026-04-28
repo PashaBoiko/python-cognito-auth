@@ -10,7 +10,7 @@ from fastapi import HTTPException
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
-from app.core.config import jwt_settings, redis_settings
+from app.core.config import redis_settings
 
 logger = logging.getLogger(__name__)
 
@@ -32,28 +32,29 @@ class TokenService:
     def __init__(self, redis_client: aioredis.Redis) -> None:
         self._redis = redis_client
 
-    async def store_token(self, token: str, user_id: str, email: str) -> None:
+    async def store_token(
+        self, token: str, user_id: str, email: str, ttl_seconds: int
+    ) -> None:
         """Persist a JWT in Redis and register it in the user's session set.
 
         The raw token string is never stored; only its SHA-256 digest is used
         as a key so that the token value cannot be reconstructed from the
         cache in the event of a Redis exposure.
 
-        The key expires after ``JWT_EXPIRATION_HOURS * 3600`` seconds, which
-        matches the token's own expiry so Redis reclaims memory automatically.
+        ``ttl_seconds`` should match the JWT's own ``exp`` claim so the Redis
+        record expires at the same moment the token does.  Callers derive
+        this value from Cognito's ``expires_in`` so the application JWT and
+        the upstream Cognito access token stay in lockstep.
 
         Args:
             token: The signed JWT string issued to the user.
             user_id: The UUID string identifying the token owner.
             email: The email address associated with the token owner.
+            ttl_seconds: Redis TTL, equal to the JWT's lifetime in seconds.
         """
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         token_key = f"{_TOKEN_KEY_PREFIX}{token_hash}"
         sessions_key = f"{_SESSIONS_KEY_PREFIX}{user_id}"
-
-        # TTL mirrors the JWT's own validity window so the Redis entry expires
-        # at the same time the token becomes invalid.
-        ttl_seconds = jwt_settings.JWT_EXPIRATION_HOURS * 3600
 
         token_payload = json.dumps(
             {

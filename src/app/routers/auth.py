@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.core.dependencies import (
     get_auth_service,
@@ -41,6 +41,32 @@ async def token_exchange(
 ) -> AuthResponse:
 
     result = await auth_service.authenticate(body.code)
+
+    return AuthResponse(
+        user=UserResponse.model_validate(result["user"]),
+        token=result["token"],
+        expires_in=result["expires_in"],
+    )
+
+
+@router.get(
+    "/auth/login",
+    response_model=AuthResponse,
+    summary="Exchange authorization code via GET (Cognito redirect URI)",
+    description=(
+        "GET-based variant of ``POST /auth`` intended to be used directly as the "
+        "Cognito hosted UI redirect URI.  Accepts the authorization ``code`` as a "
+        "query parameter, exchanges it for Cognito tokens, looks up or provisions "
+        "the user, and returns a signed application JWT.  Returns HTTP 401 when "
+        "the code is invalid or expired."
+    ),
+)
+async def login(
+    code: str = Query(..., description="OAuth 2.0 authorization code from Cognito"),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> AuthResponse:
+
+    result = await auth_service.authenticate(code)
 
     return AuthResponse(
         user=UserResponse.model_validate(result["user"]),
